@@ -23,8 +23,12 @@ public class IngestDocumentMustacheIT extends AbstractScriptTestCase {
     public void testAccessMetadataViaTemplate() {
         Map<String, Object> document = new HashMap<>();
         document.put("foo", "bar");
-        IngestDocument ingestDocument = new IngestDocument("index", "id", 1, null, null, document);
-        ingestDocument.setFieldValue(ingestDocument.renderTemplate(compile("field1")), ValueSource.wrap("1 {{foo}}", scriptService));
+        IngestDocument ingestDocument = createIngestDocument(document);
+
+        ingestDocument.setFieldValue(
+            ingestDocument.renderTemplate(compile("field1")),
+            ValueSource.wrap("1 {{foo}}", scriptService)
+        );
         assertThat(ingestDocument.getFieldValue("field1", String.class), equalTo("1 bar"));
 
         ingestDocument.setFieldValue(
@@ -41,7 +45,8 @@ public class IngestDocumentMustacheIT extends AbstractScriptTestCase {
         innerObject.put("baz", "hello baz");
         innerObject.put("qux", Collections.singletonMap("fubar", "hello qux and fubar"));
         document.put("foo", innerObject);
-        IngestDocument ingestDocument = new IngestDocument("index", "id", 1, null, null, document);
+        IngestDocument ingestDocument = createIngestDocument(document);
+
         ingestDocument.setFieldValue(
             ingestDocument.renderTemplate(compile("field1")),
             ValueSource.wrap("1 {{foo.bar}} {{foo.baz}} {{foo.qux.fubar}}", scriptService)
@@ -64,7 +69,8 @@ public class IngestDocumentMustacheIT extends AbstractScriptTestCase {
         list.add(value);
         list.add(null);
         document.put("list2", list);
-        IngestDocument ingestDocument = new IngestDocument("index", "id", 1, null, null, document);
+        IngestDocument ingestDocument = createIngestDocument(document);
+
         ingestDocument.setFieldValue(
             ingestDocument.renderTemplate(compile("field1")),
             ValueSource.wrap("1 {{list1.0}} {{list2.0}}", scriptService)
@@ -77,7 +83,8 @@ public class IngestDocumentMustacheIT extends AbstractScriptTestCase {
         Map<String, Object> ingestMap = new HashMap<>();
         ingestMap.put("timestamp", "bogus_timestamp");
         document.put("_ingest", ingestMap);
-        IngestDocument ingestDocument = new IngestDocument("index", "id", 1, null, null, document);
+        IngestDocument ingestDocument = createIngestDocument(document);
+
         ingestDocument.setFieldValue(
             ingestDocument.renderTemplate(compile("ingest_timestamp")),
             ValueSource.wrap("{{_ingest.timestamp}} and {{_source._ingest.timestamp}}", scriptService)
@@ -86,5 +93,10 @@ public class IngestDocumentMustacheIT extends AbstractScriptTestCase {
             ingestDocument.getFieldValue("ingest_timestamp", String.class),
             equalTo(ingestDocument.getIngestMetadata().get("timestamp") + " and bogus_timestamp")
         );
+    }
+
+    // Método auxiliar para evitar repetição na criação do IngestDocument
+    private IngestDocument createIngestDocument(Map<String, Object> source) {
+        return new IngestDocument("index", "id", 1, null, null, source);
     }
 }
